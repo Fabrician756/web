@@ -1,0 +1,22 @@
+[
+  {
+    "email": "owner@fabby.icu",
+    "password": "owner123",
+    "role": "owner",
+    "createdAt": "2025-10-08T17:38:15.159Z"
+  },
+  {
+    "email": "krishnaraj654@fabby.icu",
+    "password": "fabby756",
+    "role": "admin",
+    "createdAt": "2025-10-08T17:46:45.290Z",
+    "createdBy": "owner@fabby.icu"
+  },
+  {
+    "email": "krishnarajprasad1221@gmail.com",
+    "password": "fabby756",
+    "role": "admin",
+    "createdAt": "2025-10-18T16:25:25.134Z",
+    "createdBy": "owner@fabby.icu"
+  }
+]

@@ -1,0 +1,132 @@
+:root {
+  /* Light mode (default) */
+  --bg-primary: #f5f5f5;
+  --bg-secondary: #ffffff;
+  --bg-header: #2c3e50;
+  --text-primary: #333333;
+  --text-secondary: #666666;
+  --text-inverse: #ffffff;
+  --card-bg: #ffffff;
+  --card-shadow: rgba(0, 0, 0, 0.08);
+  --border-color: #e1e5e9;
+  --accent-color: #00b894;
+  --accent-hover: #00a085;
+}
+
+[data-theme="dark"] {
+  /* Dark mode */
+  --bg-primary: #1a1a1a;
+  --bg-secondary: #2d2d2d;
+  --bg-header: #1e2a3a;
+  --text-primary: #ffffff;
+  --text-secondary: #cccccc;
+  --text-inverse: #333333;
+  --card-bg: #2d2d2d;
+  --card-shadow: rgba(0, 0, 0, 0.3);
+  --border-color: #404040;
+  --accent-color: #00b894;
+  --accent-hover: #00a085;
+}
+
+/* Update existing styles to use CSS variables */
+body {
+  margin: 0;
+  font-family: Arial;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 30px;
+  background: var(--bg-header);
+  color: var(--text-inverse);
+}
+
+.small {
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: none;
+  background: var(--accent-color);
+  color: var(--text-inverse);
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.small:hover {
+  background: var(--accent-hover);
+}
+
+main {
+  padding: 24px;
+}
+
+.apk-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 18px;
+}
+
+.apk-card {
+  background: var(--card-bg);
+  padding: 14px;
+  border-radius: 10px;
+  text-align: center;
+  box-shadow: 0 6px 16px var(--card-shadow);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.apk-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px var(--card-shadow);
+}
+
+.apk-card img {
+  width: 96px;
+  height: 96px;
+  object-fit: contain;
+  margin-bottom: 10px;
+}
+
+.apk-card p {
+  margin: 0 0 10px;
+  font-weight: bold;
+  color: var(--text-primary);
+}
+
+.apk-card button {
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: none;
+  background: var(--accent-color);
+  color: var(--text-inverse);
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.apk-card button:hover {
+  background: var(--accent-hover);
+}
+
+/* Theme Toggle Button */
+.theme-toggle {
+  background: none;
+  border: 2px solid var(--accent-color);
+  color: var(--accent-color);
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-left: 10px;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.theme-toggle:hover {
+  background: var(--accent-color);
+  color: var(--text-inverse);
+}

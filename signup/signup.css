@@ -1,0 +1,43 @@
+:root {
+  /* Your existing light mode variables */
+  --bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --card-bg: rgba(255, 255, 255, 0.95);
+  --text-primary: #333;
+  --text-secondary: #666;
+  --border-color: #e1e5e9;
+  --accent-color: #667eea;
+}
+
+[data-theme="dark"] {
+  --bg-gradient: linear-gradient(135deg, #2d3748 0%, #4a5568 100%);
+  --card-bg: rgba(45, 45, 45, 0.95);
+  --text-primary: #fff;
+  --text-secondary: #ccc;
+  --border-color: #404040;
+}
+
+/* Update body background */
+body {
+  background: var(--bg-gradient);
+}
+
+/* Update card background */
+.login-card, .signup-card {
+  background: var(--card-bg);
+  color: var(--text-primary);
+}
+
+/* Update text colors */
+.logo h1, .form-group label {
+  color: var(--text-primary);
+}
+
+.logo p {
+  color: var(--text-secondary);
+}
+
+.form-control {
+  border-color: var(--border-color);
+  background: var(--card-bg);
+  color: var(--text-primary);
+}

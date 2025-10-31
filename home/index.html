@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Home - Fabby.icu</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #064635;
+            --bg-secondary: rgba(0, 0, 0, 0.75);
+            --text-primary: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.9);
+            --accent-color: #00b894;
+            --accent-hover: #00a085;
+        }
+
+        [data-theme="dark"] {
+            --bg-primary: #0a2a1a;
+            --bg-secondary: rgba(0, 0, 0, 0.85);
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        header {
+            background: var(--bg-secondary);
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .theme-toggle {
+            background: none;
+            border: 2px solid var(--accent-color);
+            color: var(--accent-color);
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .theme-toggle:hover {
+            background: var(--accent-color);
+            color: var(--text-primary);
+        }
+
+        .container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .box {
+            background: var(--bg-secondary);
+            padding: 40px;
+            border-radius: 12px;
+            text-align: center;
+            width: 360px;
+            backdrop-filter: blur(10px);
+        }
+
+        h1 {
+            margin: 0 0 10px;
+            color: var(--text-primary);
+        }
+
+        p {
+            opacity: 0.9;
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            display: block;
+            margin: 12px auto;
+            padding: 12px 20px;
+            border-radius: 8px;
+            background: var(--accent-color);
+            color: #000;
+            border: none;
+            cursor: pointer;
+            width: 100%;
+            max-width: 200px;
+            transition: background-color 0.3s ease;
+        }
+
+        .btn:hover {
+            background: var(--accent-hover);
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Fabby.icu</h1>
+        <!-- Theme toggle will be added here automatically -->
+    </header>
+
+    <div class="container">
+        <div class="box">
+            <h1 id="welcome">Welcome</h1>
+            <p id="emailLine"></p>
+            <button class="btn" id="toApks">Go to APKs</button>
+            <button class="btn" id="logout">Logout</button>
+        </div>
+    </div>
+
+    <!-- Add theme management -->
+    <script src="/theme.js"></script>
+    <script>
+        (async function(){
+            const token = localStorage.getItem('token');
+            if (!token) { window.location.href = '/'; return; }
+
+            try {
+                const r = await fetch('/api/verify', { headers: { 'Authorization': 'Bearer ' + token }});
+                const j = await r.json();
+                if (!j.loggedIn) { localStorage.removeItem('token'); window.location.href = '/'; return; }
+                document.getElementById('welcome').innerText = 'Welcome ' + (j.name || '');
+                document.getElementById('emailLine').innerText = j.email || '';
+            } catch (e) {
+                console.error(e);
+                localStorage.removeItem('token');
+                window.location.href = '/';
+                return;
+            }
+
+            document.getElementById('toApks').addEventListener('click', () => window.location.href = '/apks');
+            document.getElementById('logout').addEventListener('click', () => {
+                localStorage.removeItem('token');
+                localStorage.removeItem('theme'); // Optional: clear theme preference on logout
+                window.location.href = '/';
+            });
+        })();
+    </script>
+</body>
+</html>

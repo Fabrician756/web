@@ -1,0 +1,38 @@
+[
+  {
+    "name": "qw",
+    "email": "qw@gmail.com",
+    "phone": "1234567890",
+    "age": "14",
+    "password": "qw",
+    "admin": false
+  },
+  {
+    "name": "Krishnaraj Prasad",
+    "email": "krishnarajprasad1221@gmail.com",
+    "phone": "8100491747",
+    "age": "14",
+    "password": "krishnaraj654"
+  },
+  {
+    "name": "pekky",
+    "email": "jyosimsen123@gmail.com",
+    "phone": "7003818318",
+    "age": "17",
+    "password": "12345"
+  },
+  {
+    "name": "Xbxbhchchc",
+    "email": "vxbcnchcncncnc@g.c",
+    "phone": "Chcjvjvjvjvjvjchchcjchcncj",
+    "age": "120",
+    "password": "123456789"
+  },
+  {
+    "name": "Sanjay Prasad",
+    "email": "sanjayprasad594@gmail.com",
+    "phone": "9804578245",
+    "age": "31",
+    "password": "sanjay8245"
+  }
+]

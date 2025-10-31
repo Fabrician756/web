@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>APKs</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Add Font Awesome for icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <header>
+        <h1>Available APKs</h1>
+        <div>
+            <button id="back" class="small">Home</button>
+            <button id="logout" class="small">Logout</button>
+            <!-- Theme toggle will be added here automatically -->
+        </div>
+    </header>
+
+    <main>
+        <div id="apkList" class="apk-grid"></div>
+    </main>
+
+    <!-- Add theme management -->
+    <script src="/theme.js"></script>
+    <script src="apks.js"></script>
+    <script>
+        document.getElementById('back').addEventListener('click', () => window.location.href = '/home');
+        document.getElementById('logout').addEventListener('click', () => { 
+            localStorage.removeItem('token'); 
+            window.location.href = '/'; 
+        });
+    </script>
+</body>
+</html>

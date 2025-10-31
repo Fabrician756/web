@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Dashboard</title>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+<style>
+  body{margin:0;font-family:Arial,Helvetica,sans-serif;height:100vh;display:flex;align-items:center;justify-content:center;background:url('index.jpg') center/cover no-repeat}
+  .card{background:rgba(255,255,255,0.9);padding:40px;border-radius:12px;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,.2)}
+  h1{font-size:48px;margin:0 0 30px;color:#000}
+  .btn{display:inline-block;padding:12px 28px;margin:0 10px;border-radius:8px;background:#00b894;color:#fff;text-decoration:none}
+  @media(max-width:600px){h1{font-size:32px}.btn{display:block;margin:10px auto}}
+</style>
+</head>
+<body>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <div class="card">
+    <h1>Welcome to the Dashboard</h1>
+    <a class="btn" href="/signup">Sign Up</a>
+    <a class="btn" href="/login">Login</a>
+  </div>
+
+<script>
+(async () => {
+  const token = localStorage.getItem('token');
+  if (!token) return;
+  try {
+    const r = await fetch('/api/verify', { headers: { 'Authorization': 'Bearer ' + token }});
+    const j = await r.json();
+    if (j.loggedIn) window.location.href = '/home';
+  } catch (e) { console.error(e); }
+})();
+</script>
+<script src="/theme.js"></script>
+</body>
+</html>

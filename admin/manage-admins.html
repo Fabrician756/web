@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Manage Admins - Fabby.icu</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #f8f9fa;
+            --bg-secondary: #ffffff;
+            --bg-header: #2c3e50;
+            --text-primary: #333333;
+            --text-secondary: #666666;
+            --text-inverse: #ffffff;
+            --card-bg: #ffffff;
+            --card-shadow: rgba(0, 0, 0, 0.08);
+            --border-color: #e1e5e9;
+            --accent-color: #667eea;
+            --accent-hover: #5a6fd8;
+            --success-color: #00b894;
+            --error-color: #e74c3c;
+            --warning-color: #f39c12;
+        }
+
+        [data-theme="dark"] {
+            --bg-primary: #1a1a1a;
+            --bg-secondary: #2d2d2d;
+            --bg-header: #1e2a3a;
+            --text-primary: #ffffff;
+            --text-secondary: #cccccc;
+            --text-inverse: #333333;
+            --card-bg: #2d2d2d;
+            --card-shadow: rgba(0, 0, 0, 0.3);
+            --border-color: #404040;
+            --accent-color: #667eea;
+            --accent-hover: #5a6fd8;
+            --success-color: #00b894;
+            --error-color: #e74c3c;
+            --warning-color: #f39c12;
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .admin-header {
+            background: var(--bg-header);
+            color: var(--text-inverse);
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .admin-header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        /* Main Content */
+        .admin-main {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 30px;
+        }
+
+        /* Cards */
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 15px var(--card-shadow);
+            border: 1px solid var(--border-color);
+        }
+
+        .card h2 {
+            margin: 0 0 20px 0;
+            color: var(--text-primary);
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--accent-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-hover);
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            background: var(--error-color);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: transparent;
+            border: 2px solid var(--border-color);
+            color: var(--text-primary);
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+
+        /* Forms */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr auto;
+            gap: 15px;
+            align-items: end;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid var(--border-color);
+            border-radius: 10px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            background: var(--card-bg);
+            color: var(--text-primary);
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        /* Tables */
+        .admins-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .admins-table th,
+        .admins-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .admins-table th {
+            background: var(--bg-primary);
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .admins-table tr:hover {
+            background: var(--bg-primary);
+        }
+
+        .role-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .role-owner {
+            background: rgba(231, 76, 60, 0.1);
+            color: var(--error-color);
+        }
+
+        .role-admin {
+            background: rgba(52, 152, 219, 0.1);
+            color: #3498db;
+        }
+
+        /* Messages */
+        .message {
+            padding: 12px;
+            border-radius: 8px;
+            margin: 15px 0;
+            display: none;
+        }
+
+        .message.success {
+            background: rgba(0, 184, 148, 0.1);
+            color: var(--success-color);
+            border: 1px solid var(--success-color);
+        }
+
+        .message.error {
+            background: rgba(231, 76, 60, 0.1);
+            color: var(--error-color);
+            border: 1px solid var(--error-color);
+        }
+
+        /* Theme Toggle */
+        .theme-toggle {
+            background: transparent;
+            border: 2px solid var(--accent-color);
+            color: var(--accent-color);
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .theme-toggle:hover {
+            background: var(--accent-color);
+            color: white;
+        }
+
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .admins-table {
+                display: block;
+                overflow-x: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="admin-header">
+        <h1><i class="fas fa-users-cog"></i> Manage Administrators</h1>
+        <div class="header-actions">
+            <button class="theme-toggle" id="themeToggle">
+                <i class="fas fa-moon"></i> Dark Mode
+            </button>
+            <button class="btn btn-secondary" onclick="window.location.href='/admin/dashboard'">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </button>
+            <button class="btn btn-secondary" onclick="logout()">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </button>
+        </div>
+    </header>
+
+    <main class="admin-main">
+        <!-- Create Admin Card -->
+        <div class="card">
+            <h2><i class="fas fa-user-plus"></i> Create New Admin</h2>
+            <form id="createAdminForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="newAdminEmail">Email Address</label>
+                        <input type="email" id="newAdminEmail" class="form-control" placeholder="Enter admin email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="newAdminPassword">Password</label>
+                        <input type="password" id="newAdminPassword" class="form-control" placeholder="Enter admin password" required>
+                    </div>
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Create Admin
+                        </button>
+                    </div>
+                </div>
+            </form>
+            <div id="createMessage" class="message"></div>
+        </div>
+
+        <!-- Admins List Card -->
+        <div class="card">
+            <h2><i class="fas fa-list"></i> Administrator Accounts</h2>
+            <div id="adminsMessage" class="message"></div>
+            <table class="admins-table" id="adminsTable">
+                <thead>
+                    <tr>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th>Created</th>
+                        <th>Created By</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="adminsList">
+                    <!-- Admins will be loaded here -->
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <!-- Load theme manager -->
+    <script src="/theme.js"></script>
+    
+        <!-- Admin Management Script -->
+    <script>
+        const adminToken = localStorage.getItem('adminToken');
+        const adminRole = localStorage.getItem('adminRole');
+
+        // Check if user is owner
+        if (!adminToken || adminRole !== 'owner') {
+            alert('Access denied. Only owner can access this page.');
+            window.location.href = '/admin/dashboard';
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            loadAdminsList();
+            setupEventListeners();
+        });
+
+        function setupEventListeners() {
+            document.getElementById('createAdminForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                createAdmin();
+            });
+        }
+
+        function createAdmin() {
+            const email = document.getElementById('newAdminEmail').value.trim();
+            const password = document.getElementById('newAdminPassword').value;
+            const messageDiv = document.getElementById('createMessage');
+
+            if (!email || !password) {
+                showMessage(messageDiv, 'Please fill in all fields', 'error');
+                return;
+            }
+
+            const submitBtn = document.querySelector('#createAdminForm button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating...';
+            submitBtn.disabled = true;
+
+            fetch('/admin/create', {
+                method: "POST",
+                headers: {
+                    'Authorization': 'Bearer ' + adminToken,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ email, password })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showMessage(messageDiv, data.message, 'success');
+                    document.getElementById('createAdminForm').reset();
+                    loadAdminsList();
+                } else {
+                    showMessage(messageDiv, data.message, 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Create admin error:', error);
+                showMessage(messageDiv, 'Failed to create admin: ' + error.message, 'error');
+            })
+            .finally(() => {
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            });
+        }
+
+        function loadAdminsList() {
+            fetch('/admin/list', {
+                headers: {
+                    'Authorization': 'Bearer ' + adminToken
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                const adminsList = document.getElementById('adminsList');
+                
+                if (data.success) {
+                    if (data.admins.length > 0) {
+                        adminsList.innerHTML = data.admins.map(admin => `
+                            <tr>
+                                <td>${admin.email}</td>
+                                <td>
+                                    <span class="role-badge ${admin.role === 'owner' ? 'role-owner' : 'role-admin'}">
+                                        ${admin.role}
+                                    </span>
+                                </td>
+                                <td>${new Date(admin.createdAt).toLocaleDateString()}</td>
+                                <td>${admin.createdBy || 'System'}</td>
+                                <td>
+                                    ${admin.role !== 'owner' ? `
+                                        <button class="btn btn-danger btn-small" onclick="deleteAdmin('${admin.email}')">
+                                            <i class="fas fa-trash"></i> Delete
+                                        </button>
+                                    ` : '<em>Protected</em>'}
+                                </td>
+                            </tr>
+                        `).join('');
+                    } else {
+                        adminsList.innerHTML = '<tr><td colspan="5" style="text-align: center;">No admins found</td></tr>';
+                    }
+                } else {
+                    showMessage('adminsMessage', data.message, 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Load admins error:', error);
+                showMessage('adminsMessage', 'Failed to load admins', 'error');
+            });
+        }
+
+        function deleteAdmin(email) {
+            if (!confirm(`Are you sure you want to delete admin "${email}"? This action cannot be undone.`)) {
+                return;
+            }
+
+            fetch(`/admin/delete/${encodeURIComponent(email)}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': 'Bearer ' + adminToken
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showMessage('adminsMessage', data.message, 'success');
+                    loadAdminsList();
+                } else {
+                    showMessage('adminsMessage', data.message, 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Delete admin error:', error);
+                showMessage('adminsMessage', 'Failed to delete admin', 'error');
+            });
+        }
+
+        function showMessage(element, message, type) {
+            const elementDiv = typeof element === 'string' ? document.getElementById(element) : element;
+            elementDiv.textContent = message;
+            elementDiv.className = `message ${type}`;
+            elementDiv.style.display = 'block';
+            
+            setTimeout(() => {
+                elementDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        function logout() {
+            localStorage.removeItem('adminToken');
+            localStorage.removeItem('adminRole');
+            window.location.href = '/admin';
+        }
+    </script>
+</body>
+</html>
