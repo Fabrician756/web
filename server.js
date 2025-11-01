@@ -1,4 +1,4 @@
-// server.js - Complete version with enhanced admin system
+// server.js - Complete version with enhanced admin system and link uploads
 const express = require("express");
 const fs = require("fs");
 const path = require("path");
@@ -29,6 +29,7 @@ function writeUsers(users) {
 // ==================== ENHANCED ADMIN SYSTEM ====================
 
 const adminFile = path.join(__dirname, "admins.json");
+const apkDataFile = path.join(__dirname, "apks.json"); // NEW: Store APK metadata
 
 // Initialize admin file with owner account
 function initializeAdminFile() {
@@ -41,6 +42,13 @@ function initializeAdminFile() {
     }];
     fs.writeFileSync(adminFile, JSON.stringify(ownerAdmin, null, 2));
     console.log("Owner admin account created");
+  }
+}
+
+// Initialize APK data file
+function initializeApkDataFile() {
+  if (!fs.existsSync(apkDataFile)) {
+    fs.writeFileSync(apkDataFile, JSON.stringify([], null, 2));
   }
 }
 
@@ -57,8 +65,23 @@ function writeAdmins(admins) {
   fs.writeFileSync(adminFile, JSON.stringify(admins, null, 2));
 }
 
+// NEW: APK Data functions
+function readApkData() {
+  if (!fs.existsSync(apkDataFile)) return [];
+  try { 
+    return JSON.parse(fs.readFileSync(apkDataFile, "utf8") || "[]"); 
+  } catch { 
+    return []; 
+  }
+}
+
+function writeApkData(apks) {
+  fs.writeFileSync(apkDataFile, JSON.stringify(apks, null, 2));
+}
+
 // Initialize admin system on server start
 initializeAdminFile();
+initializeApkDataFile();
 
 // ---------------- ADMIN AUTHENTICATION ----------------
 app.post("/admin/login", (req, res) => {
@@ -314,10 +337,106 @@ app.post("/admin/upload", (req, res) => {
       return res.status(400).json({ success: false, message: "No file uploaded" });
     }
 
+    // Add to APK data
+    const apks = readApkData();
+    const apkName = path.parse(req.file.filename).name;
+    
+    // Check if APK already exists
+    if (!apks.find(apk => apk.name === apkName && apk.type === "file")) {
+      apks.push({
+        name: apkName,
+        apk: req.file.filename,
+        type: "file",
+        uploadedAt: new Date().toISOString()
+      });
+      writeApkData(apks);
+    }
+
     res.json({ 
       success: true, 
       message: "APK uploaded successfully",
       filename: req.file.filename
+    });
+  });
+});
+
+// ---------------- UPLOAD VIA LINK ----------------
+const linkUpload = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => {
+      if (!fs.existsSync(apkFolder)) {
+        fs.mkdirSync(apkFolder, { recursive: true });
+      }
+      cb(null, apkFolder);
+    },
+    filename: (req, file, cb) => {
+      const { appName } = req.body;
+      const safeName = appName.replace(/[^a-zA-Z0-9]/g, "_").toLowerCase();
+      cb(null, safeName + ".png");
+    }
+  }),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith("image/")) {
+      cb(null, true);
+    } else {
+      cb(new Error("Only image files are allowed"), false);
+    }
+  }
+});
+
+app.post("/admin/upload-link", (req, res) => {
+  let auth = req.headers["authorization"];
+  if (!auth) return res.status(401).json({ success: false, message: "Unauthorized" });
+
+  try {
+    jwt.verify(auth.split(" ")[1], SECRET_KEY);
+  } catch {
+    return res.status(401).json({ success: false, message: "Unauthorized" });
+  }
+
+  linkUpload.single("icon")(req, res, (err) => {
+    if (err) {
+      return res.status(400).json({ success: false, message: err.message });
+    }
+
+    const { apkLink, appName } = req.body;
+    
+    if (!apkLink || !appName) {
+      return res.status(400).json({ success: false, message: "APK link and app name are required" });
+    }
+
+    // Validate URL
+    try {
+      new URL(apkLink);
+    } catch {
+      return res.status(400).json({ success: false, message: "Invalid URL" });
+    }
+
+    // Add to APK data
+    const apks = readApkData();
+    const safeName = appName.replace(/[^a-zA-Z0-9]/g, "_").toLowerCase();
+    const iconFile = req.file ? safeName + ".png" : null;
+
+    // Check if APK already exists
+    if (apks.find(apk => apk.name === appName && apk.type === "link")) {
+      return res.status(400).json({ success: false, message: "APK with this name already exists" });
+    }
+
+    apks.push({
+      name: appName,
+      apkLink: apkLink,
+      icon: iconFile,
+      type: "link",
+      uploadedAt: new Date().toISOString()
+    });
+
+    writeApkData(apks);
+
+    res.json({ 
+      success: true, 
+      message: "APK link added successfully",
+      appName: appName
     });
   });
 });
@@ -365,6 +484,17 @@ app.post("/admin/upload-icon", (req, res) => {
       return res.status(400).json({ success: false, message: "No icon uploaded" });
     }
 
+    const { apkName } = req.body;
+    
+    // Update APK data with icon
+    const apks = readApkData();
+    const apkIndex = apks.findIndex(apk => apk.name === apkName && apk.type === "file");
+    
+    if (apkIndex !== -1) {
+      apks[apkIndex].icon = req.file.filename;
+      writeApkData(apks);
+    }
+
     res.json({ 
       success: true, 
       message: "Icon uploaded successfully",
@@ -385,21 +515,77 @@ app.delete("/admin/apk/:name", (req, res) => {
   }
 
   const apkName = req.params.name;
-  const apkPath = path.join(apkFolder, apkName + ".apk");
-  const iconPath = path.join(apkFolder, apkName + ".png");
+  const apks = readApkData();
+  const apkIndex = apks.findIndex(apk => apk.name === apkName && apk.type === "file");
 
+  if (apkIndex === -1) {
+    return res.status(404).json({ success: false, message: "APK not found" });
+  }
+
+  const apkData = apks[apkIndex];
+  
   try {
+    // Delete APK file
+    const apkPath = path.join(apkFolder, apkData.apk);
     if (fs.existsSync(apkPath)) {
       fs.unlinkSync(apkPath);
     }
 
-    if (fs.existsSync(iconPath)) {
-      fs.unlinkSync(iconPath);
+    // Delete icon file if exists
+    if (apkData.icon) {
+      const iconPath = path.join(apkFolder, apkData.icon);
+      if (fs.existsSync(iconPath)) {
+        fs.unlinkSync(iconPath);
+      }
     }
+
+    // Remove from APK data
+    apks.splice(apkIndex, 1);
+    writeApkData(apks);
 
     res.json({ success: true, message: "APK deleted successfully" });
   } catch (error) {
     res.status(500).json({ success: false, message: "Error deleting APK" });
+  }
+});
+
+// ---------------- DELETE LINK APK ----------------
+app.delete("/admin/apk-link/:name", (req, res) => {
+  let auth = req.headers["authorization"];
+  if (!auth) return res.status(401).json({ success: false, message: "Unauthorized" });
+
+  try {
+    jwt.verify(auth.split(" ")[1], SECRET_KEY);
+  } catch {
+    return res.status(401).json({ success: false, message: "Unauthorized" });
+  }
+
+  const apkName = req.params.name;
+  const apks = readApkData();
+  const apkIndex = apks.findIndex(apk => apk.name === apkName && apk.type === "link");
+
+  if (apkIndex === -1) {
+    return res.status(404).json({ success: false, message: "APK not found" });
+  }
+
+  const apkData = apks[apkIndex];
+  
+  try {
+    // Delete icon file if exists
+    if (apkData.icon) {
+      const iconPath = path.join(apkFolder, apkData.icon);
+      if (fs.existsSync(iconPath)) {
+        fs.unlinkSync(iconPath);
+      }
+    }
+
+    // Remove from APK data
+    apks.splice(apkIndex, 1);
+    writeApkData(apks);
+
+    res.json({ success: true, message: "APK link deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Error deleting APK link" });
   }
 });
 
@@ -415,15 +601,8 @@ app.get("/api/apks", (req, res) => {
     return res.status(401).json({ success: false });
   }
 
-  const files = fs.existsSync(apkFolder) ? fs.readdirSync(apkFolder) : [];
-  const apkFiles = files.filter(f => f.toLowerCase().endsWith(".apk"));
-  const list = apkFiles.map(file => {
-    const base = path.parse(file).name;
-    const iconFile = files.includes(base + ".png") ? base + ".png" : null;
-    return { name: base, apk: file, icon: iconFile };
-  });
-
-  res.json({ success: true, apks: list });
+  const apks = readApkData();
+  res.json({ success: true, apks: apks });
 });
 
 // ---------------- DOWNLOAD APK ----------------
@@ -452,7 +631,7 @@ app.get("/home", (req, res) => res.sendFile(path.join(__dirname, "home", "index.
 app.get("/apks", (req, res) => res.sendFile(path.join(__dirname, "apks", "index.html")));
 app.get("/admin", (req, res) => res.sendFile(path.join(__dirname, "admin", "index.html")));
 app.get("/admin/dashboard", (req, res) => res.sendFile(path.join(__dirname, "admin", "dashboard.html")));
-app.get("/admin/manage", (req, res) => res.sendFile(path.join(__dirname, "admin", "manage-admins.html"))); // NEW: Admin management page
+app.get("/admin/manage", (req, res) => res.sendFile(path.join(__dirname, "admin", "manage-admins.html")));
 
 // fallback
 app.use((req, res) => res.redirect("/"));
