@@ -1,4 +1,4 @@
-// server.js - Complete version with enhanced admin system and link uploads
+// server.js - Fixed version with both file and link uploads
 const express = require("express");
 const fs = require("fs");
 const path = require("path");
@@ -29,26 +29,18 @@ function writeUsers(users) {
 // ==================== ENHANCED ADMIN SYSTEM ====================
 
 const adminFile = path.join(__dirname, "admins.json");
-const apkDataFile = path.join(__dirname, "apks.json"); // NEW: Store APK metadata
 
 // Initialize admin file with owner account
 function initializeAdminFile() {
   if (!fs.existsSync(adminFile)) {
     const ownerAdmin = [{
       email: "owner@fabby.icu",
-      password: "owner123", // Change this to a secure password
+      password: "owner123",
       role: "owner",
       createdAt: new Date().toISOString()
     }];
     fs.writeFileSync(adminFile, JSON.stringify(ownerAdmin, null, 2));
     console.log("Owner admin account created");
-  }
-}
-
-// Initialize APK data file
-function initializeApkDataFile() {
-  if (!fs.existsSync(apkDataFile)) {
-    fs.writeFileSync(apkDataFile, JSON.stringify([], null, 2));
   }
 }
 
@@ -65,23 +57,8 @@ function writeAdmins(admins) {
   fs.writeFileSync(adminFile, JSON.stringify(admins, null, 2));
 }
 
-// NEW: APK Data functions
-function readApkData() {
-  if (!fs.existsSync(apkDataFile)) return [];
-  try { 
-    return JSON.parse(fs.readFileSync(apkDataFile, "utf8") || "[]"); 
-  } catch { 
-    return []; 
-  }
-}
-
-function writeApkData(apks) {
-  fs.writeFileSync(apkDataFile, JSON.stringify(apks, null, 2));
-}
-
 // Initialize admin system on server start
 initializeAdminFile();
-initializeApkDataFile();
 
 // ---------------- ADMIN AUTHENTICATION ----------------
 app.post("/admin/login", (req, res) => {
@@ -145,7 +122,6 @@ app.post("/admin/create", (req, res) => {
     const admins = readAdmins();
     const currentAdmin = admins.find(a => a.email === payload.email);
     
-    // Only owner can create admins
     if (!currentAdmin || currentAdmin.role !== "owner") {
       return res.status(403).json({ success: false, message: "Only owner can create admins" });
     }
@@ -156,12 +132,10 @@ app.post("/admin/create", (req, res) => {
       return res.status(400).json({ success: false, message: "Email and password required" });
     }
 
-    // Check if admin already exists
     if (admins.find(a => a.email === email)) {
       return res.status(400).json({ success: false, message: "Admin already exists" });
     }
 
-    // Create new admin
     const newAdmin = {
       email,
       password,
@@ -192,12 +166,10 @@ app.get("/admin/list", (req, res) => {
     const admins = readAdmins();
     const currentAdmin = admins.find(a => a.email === payload.email);
     
-    // Only owner can list admins
     if (!currentAdmin || currentAdmin.role !== "owner") {
       return res.status(403).json({ success: false, message: "Only owner can view admin list" });
     }
 
-    // Return admins without passwords
     const adminList = admins.map(admin => ({
       email: admin.email,
       role: admin.role,
@@ -221,14 +193,12 @@ app.delete("/admin/delete/:email", (req, res) => {
     const admins = readAdmins();
     const currentAdmin = admins.find(a => a.email === payload.email);
     
-    // Only owner can delete admins
     if (!currentAdmin || currentAdmin.role !== "owner") {
       return res.status(403).json({ success: false, message: "Only owner can delete admins" });
     }
 
     const targetEmail = req.params.email;
     
-    // Prevent owner from deleting themselves
     if (targetEmail === currentAdmin.email) {
       return res.status(400).json({ success: false, message: "Cannot delete your own account" });
     }
@@ -289,7 +259,6 @@ app.get("/api/verify", (req, res) => {
 // ---------------- UPLOAD APK ----------------
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    // Create apks folder if it doesn't exist
     if (!fs.existsSync(apkFolder)) {
       fs.mkdirSync(apkFolder, { recursive: true });
     }
@@ -335,21 +304,6 @@ app.post("/admin/upload", (req, res) => {
 
     if (!req.file) {
       return res.status(400).json({ success: false, message: "No file uploaded" });
-    }
-
-    // Add to APK data
-    const apks = readApkData();
-    const apkName = path.parse(req.file.filename).name;
-    
-    // Check if APK already exists
-    if (!apks.find(apk => apk.name === apkName && apk.type === "file")) {
-      apks.push({
-        name: apkName,
-        apk: req.file.filename,
-        type: "file",
-        uploadedAt: new Date().toISOString()
-      });
-      writeApkData(apks);
     }
 
     res.json({ 
@@ -406,32 +360,24 @@ app.post("/admin/upload-link", (req, res) => {
       return res.status(400).json({ success: false, message: "APK link and app name are required" });
     }
 
-    // Validate URL
     try {
       new URL(apkLink);
     } catch {
       return res.status(400).json({ success: false, message: "Invalid URL" });
     }
 
-    // Add to APK data
-    const apks = readApkData();
-    const safeName = appName.replace(/[^a-zA-Z0-9]/g, "_").toLowerCase();
-    const iconFile = req.file ? safeName + ".png" : null;
-
-    // Check if APK already exists
-    if (apks.find(apk => apk.name === appName && apk.type === "link")) {
-      return res.status(400).json({ success: false, message: "APK with this name already exists" });
-    }
-
-    apks.push({
+    // Create a special file to mark this as a link APK
+    const linkData = {
       name: appName,
       apkLink: apkLink,
-      icon: iconFile,
       type: "link",
       uploadedAt: new Date().toISOString()
-    });
+    };
 
-    writeApkData(apks);
+    const linkFileName = appName.replace(/[^a-zA-Z0-9]/g, "_").toLowerCase() + ".link";
+    const linkFilePath = path.join(apkFolder, linkFileName);
+    
+    fs.writeFileSync(linkFilePath, JSON.stringify(linkData));
 
     res.json({ 
       success: true, 
@@ -484,17 +430,6 @@ app.post("/admin/upload-icon", (req, res) => {
       return res.status(400).json({ success: false, message: "No icon uploaded" });
     }
 
-    const { apkName } = req.body;
-    
-    // Update APK data with icon
-    const apks = readApkData();
-    const apkIndex = apks.findIndex(apk => apk.name === apkName && apk.type === "file");
-    
-    if (apkIndex !== -1) {
-      apks[apkIndex].icon = req.file.filename;
-      writeApkData(apks);
-    }
-
     res.json({ 
       success: true, 
       message: "Icon uploaded successfully",
@@ -515,33 +450,17 @@ app.delete("/admin/apk/:name", (req, res) => {
   }
 
   const apkName = req.params.name;
-  const apks = readApkData();
-  const apkIndex = apks.findIndex(apk => apk.name === apkName && apk.type === "file");
+  const apkPath = path.join(apkFolder, apkName + ".apk");
+  const iconPath = path.join(apkFolder, apkName + ".png");
 
-  if (apkIndex === -1) {
-    return res.status(404).json({ success: false, message: "APK not found" });
-  }
-
-  const apkData = apks[apkIndex];
-  
   try {
-    // Delete APK file
-    const apkPath = path.join(apkFolder, apkData.apk);
     if (fs.existsSync(apkPath)) {
       fs.unlinkSync(apkPath);
     }
 
-    // Delete icon file if exists
-    if (apkData.icon) {
-      const iconPath = path.join(apkFolder, apkData.icon);
-      if (fs.existsSync(iconPath)) {
-        fs.unlinkSync(iconPath);
-      }
+    if (fs.existsSync(iconPath)) {
+      fs.unlinkSync(iconPath);
     }
-
-    // Remove from APK data
-    apks.splice(apkIndex, 1);
-    writeApkData(apks);
 
     res.json({ success: true, message: "APK deleted successfully" });
   } catch (error) {
@@ -561,27 +480,17 @@ app.delete("/admin/apk-link/:name", (req, res) => {
   }
 
   const apkName = req.params.name;
-  const apks = readApkData();
-  const apkIndex = apks.findIndex(apk => apk.name === apkName && apk.type === "link");
+  const iconPath = path.join(apkFolder, apkName + ".png");
+  const linkPath = path.join(apkFolder, apkName + ".link");
 
-  if (apkIndex === -1) {
-    return res.status(404).json({ success: false, message: "APK not found" });
-  }
-
-  const apkData = apks[apkIndex];
-  
   try {
-    // Delete icon file if exists
-    if (apkData.icon) {
-      const iconPath = path.join(apkFolder, apkData.icon);
-      if (fs.existsSync(iconPath)) {
-        fs.unlinkSync(iconPath);
-      }
+    if (fs.existsSync(iconPath)) {
+      fs.unlinkSync(iconPath);
     }
 
-    // Remove from APK data
-    apks.splice(apkIndex, 1);
-    writeApkData(apks);
+    if (fs.existsSync(linkPath)) {
+      fs.unlinkSync(linkPath);
+    }
 
     res.json({ success: true, message: "APK link deleted successfully" });
   } catch (error) {
@@ -601,22 +510,84 @@ app.get("/api/apks", (req, res) => {
     return res.status(401).json({ success: false });
   }
 
-  const apks = readApkData();
-  res.json({ success: true, apks: apks });
+  const files = fs.existsSync(apkFolder) ? fs.readdirSync(apkFolder) : [];
+  const apkFiles = files.filter(f => f.toLowerCase().endsWith(".apk"));
+  const linkFiles = files.filter(f => f.toLowerCase().endsWith(".link"));
+  
+  // Process regular APK files
+  const fileApks = apkFiles.map(file => {
+    const base = path.parse(file).name;
+    const iconFile = files.includes(base + ".png") ? base + ".png" : null;
+    return { name: base, apk: file, icon: iconFile, type: "file" };
+  });
+
+  // Process link APKs
+  const linkApks = linkFiles.map(linkFile => {
+    try {
+      const linkPath = path.join(apkFolder, linkFile);
+      const linkData = JSON.parse(fs.readFileSync(linkPath, "utf8"));
+      const base = path.parse(linkFile).name;
+      const iconFile = files.includes(base + ".png") ? base + ".png" : null;
+      
+      return {
+        name: linkData.name,
+        apkLink: linkData.apkLink,
+        icon: iconFile,
+        type: "link"
+      };
+    } catch (error) {
+      console.error("Error reading link file:", linkFile, error);
+      return null;
+    }
+  }).filter(apk => apk !== null);
+
+  // Combine both types
+  const allApks = [...fileApks, ...linkApks];
+
+  res.json({ success: true, apks: allApks });
+});
+
+// ---------------- PUBLIC APK LIST (for home page) ----------------
+app.get("/api/public/apks", (req, res) => {
+  const files = fs.existsSync(apkFolder) ? fs.readdirSync(apkFolder) : [];
+  const apkFiles = files.filter(f => f.toLowerCase().endsWith(".apk"));
+  const linkFiles = files.filter(f => f.toLowerCase().endsWith(".link"));
+  
+  // Process regular APK files
+  const fileApks = apkFiles.map(file => {
+    const base = path.parse(file).name;
+    const iconFile = files.includes(base + ".png") ? base + ".png" : null;
+    return { name: base, apk: file, icon: iconFile, type: "file" };
+  });
+
+  // Process link APKs
+  const linkApks = linkFiles.map(linkFile => {
+    try {
+      const linkPath = path.join(apkFolder, linkFile);
+      const linkData = JSON.parse(fs.readFileSync(linkPath, "utf8"));
+      const base = path.parse(linkFile).name;
+      const iconFile = files.includes(base + ".png") ? base + ".png" : null;
+      
+      return {
+        name: linkData.name,
+        apkLink: linkData.apkLink,
+        icon: iconFile,
+        type: "link"
+      };
+    } catch (error) {
+      console.error("Error reading link file:", linkFile, error);
+      return null;
+    }
+  }).filter(apk => apk !== null);
+
+  // Combine both types
+  const allApks = [...fileApks, ...linkApks];
+
+  res.json({ success: true, apks: allApks });
 });
 
 // ---------------- DOWNLOAD APK ----------------
 app.get("/download/:name", (req, res) => {
-  let auth = req.headers["authorization"];
-  if (!auth && req.query && req.query.token) auth = "Bearer " + req.query.token;
-  if (!auth) return res.status(401).send("Unauthorized");
-
-  try {
-    jwt.verify(auth.split(" ")[1], SECRET_KEY);
-  } catch {
-    return res.status(401).send("Unauthorized");
-  }
-
   const fileName = req.params.name;
   const filePath = path.join(apkFolder, fileName);
   if (!fs.existsSync(filePath)) return res.status(404).send("APK not found");
